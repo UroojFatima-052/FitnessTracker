@@ -5,6 +5,7 @@ import {
   FlatList,
   TouchableOpacity,
   Image,
+  ImageBackground,
   StyleSheet,
   StatusBar,
 } from 'react-native';
@@ -15,50 +16,118 @@ import { theme } from '../theme';
 export default function HomeScreen({ navigation }) {
   const { exercises, isCompleted, completedIds } = useExercises();
 
-  const renderItem = ({ item }) => {
+  // Pick the first incomplete exercise as the "Featured" pick.
+  // If everything's done, just show the first one.
+  const featured =
+    exercises.find((ex) => !isCompleted(ex.id)) || exercises[0];
+  const restOfList = exercises.filter((ex) => ex.id !== featured?.id);
+
+  // Render a compact row in the "All Exercises" list
+  const renderRow = ({ item }) => {
     const completed = isCompleted(item.id);
     return (
       <TouchableOpacity
-        style={styles.card}
+        style={styles.row}
         onPress={() => navigation.navigate('ExerciseDetail', { exercise: item })}
-        activeOpacity={0.7}
+        activeOpacity={0.75}
       >
-        <Image source={{ uri: item.image }} style={styles.cardImage} />
-        <View style={styles.cardContent}>
-          <View style={styles.cardHeader}>
-            <Text style={styles.cardTitle}>{item.name}</Text>
-            {completed && (
-              <View style={styles.completedBadge}>
-                <Ionicons name="checkmark" size={13} color="#fff" />
-              </View>
-            )}
-          </View>
-          <Text style={styles.cardCategory}>{item.category}</Text>
-          <View style={styles.cardMeta}>
-            <Ionicons name="time-outline" size={13} color={theme.textDim} />
-            <Text style={styles.cardDuration}>{item.duration}</Text>
-          </View>
+        <Image source={{ uri: item.image }} style={styles.rowImage} />
+        <View style={styles.rowText}>
+          <Text style={styles.rowTitle}>{item.name}</Text>
+          <Text style={styles.rowMeta}>
+            {item.category} · {item.duration}
+          </Text>
         </View>
+        {completed ? (
+          <View style={styles.rowCheck}>
+            <Ionicons name="checkmark" size={14} color="#0F1419" />
+          </View>
+        ) : (
+          <Ionicons name="chevron-forward" size={18} color={theme.textMuted} />
+        )}
       </TouchableOpacity>
     );
   };
 
+  // Header rendered as part of FlatList so it scrolls with the list
+  const ListHeader = () => (
+    <View>
+      {/* Featured / Hero card */}
+      {featured && (
+        <View style={styles.sectionHead}>
+          <Text style={styles.sectionLabel}>FEATURED</Text>
+          <Text style={styles.sectionHint}>Today's pick</Text>
+        </View>
+      )}
+
+      {featured && (
+        <TouchableOpacity
+          style={styles.heroCard}
+          onPress={() =>
+            navigation.navigate('ExerciseDetail', { exercise: featured })
+          }
+          activeOpacity={0.85}
+        >
+          <ImageBackground
+            source={{ uri: featured.image }}
+            style={styles.heroImage}
+            imageStyle={styles.heroImageRadius}
+          >
+            <View style={styles.heroOverlay}>
+              <View style={styles.heroPlay}>
+                <Ionicons name="play" size={16} color={theme.pink} />
+              </View>
+              <View style={styles.heroBottom}>
+                <View style={styles.heroBadge}>
+                  <Text style={styles.heroBadgeText}>{featured.category}</Text>
+                </View>
+                <Text style={styles.heroTitle}>{featured.name}</Text>
+                <View style={styles.heroMetaRow}>
+                  <Ionicons
+                    name="time-outline"
+                    size={13}
+                    color={theme.textDim}
+                  />
+                  <Text style={styles.heroMeta}>{featured.duration}</Text>
+                </View>
+              </View>
+            </View>
+          </ImageBackground>
+        </TouchableOpacity>
+      )}
+
+      {/* All Exercises section header */}
+      <View style={styles.sectionHead}>
+        <Text style={styles.sectionLabel}>ALL EXERCISES</Text>
+        <Text style={styles.sectionHint}>
+          {restOfList.length} {restOfList.length === 1 ? 'item' : 'items'}
+        </Text>
+      </View>
+    </View>
+  );
+
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor={theme.bgAlt} />
+      <StatusBar barStyle="light-content" backgroundColor={theme.pink} />
 
+      {/* Compact teal header */}
       <View style={styles.header}>
         <Text style={styles.headerAccent}>WELCOME BACK</Text>
-        <Text style={styles.headerTitle}>Let's Work Out</Text>
-        <Text style={styles.headerSubtitle}>
-          {exercises.length} exercises · {completedIds.length} completed
-        </Text>
+        <View style={styles.headerRow}>
+          <Text style={styles.headerTitle}>Let's Work Out</Text>
+          <View style={styles.progressChip}>
+            <Text style={styles.progressChipText}>
+              {completedIds.length}/{exercises.length} done
+            </Text>
+          </View>
+        </View>
       </View>
 
       <FlatList
-        data={exercises}
+        data={restOfList}
         keyExtractor={(item) => item.id}
-        renderItem={renderItem}
+        renderItem={renderRow}
+        ListHeaderComponent={ListHeader}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
       />
@@ -66,9 +135,9 @@ export default function HomeScreen({ navigation }) {
       <TouchableOpacity
         style={styles.fab}
         onPress={() => navigation.navigate('AddExercise')}
-        activeOpacity={0.8}
+        activeOpacity={0.85}
       >
-        <Ionicons name="add" size={26} color="#fff" />
+        <Ionicons name="add" size={26} color="#0F1419" />
       </TouchableOpacity>
     </View>
   );
@@ -77,9 +146,10 @@ export default function HomeScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.bg },
 
+  // === Header ===
   header: {
-    paddingTop: 60,
-    paddingBottom: 26,
+    paddingTop: 55,
+    paddingBottom: 22,
     paddingHorizontal: 22,
     backgroundColor: theme.pink,
     borderBottomLeftRadius: 24,
@@ -91,100 +161,175 @@ const styles = StyleSheet.create({
     elevation: 12,
   },
   headerAccent: {
-    fontSize: 12,
+    fontSize: 11,
     color: 'rgba(15,23,42,0.65)',
     fontWeight: '700',
     letterSpacing: 2,
-    marginBottom: 6,
+    marginBottom: 4,
   },
-  headerTitle: {
-    fontSize: 30,
-    fontWeight: '800',
-    color: '#0F1419',
-    letterSpacing: -0.5,
-  },
-  headerSubtitle: {
-    fontSize: 14,
-    color: 'rgba(15,23,42,0.7)',
-    marginTop: 4,
-    fontWeight: '500',
-  },
-
-  listContent: {
-    padding: 16,
-    paddingBottom: 90,
-  },
-
-  card: {
-    flexDirection: 'row',
-    backgroundColor: theme.surface,
-    borderRadius: 8,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: theme.border,
-    overflow: 'hidden',
-  },
-  cardImage: {
-    width: 90,
-    height: 90,
-    backgroundColor: theme.surfaceLight,
-  },
-  cardContent: {
-    flex: 1,
-    padding: 12,
-    justifyContent: 'center',
-  },
-  cardHeader: {
+  headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  cardTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: theme.text,
-    flex: 1,
+  headerTitle: {
+    fontSize: 26,
+    fontWeight: '800',
+    color: '#0F1419',
+    letterSpacing: -0.5,
   },
-  cardCategory: {
+  progressChip: {
+    backgroundColor: 'rgba(15,23,42,0.18)',
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 14,
+  },
+  progressChipText: {
+    color: '#0F1419',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+
+  // === Section labels ===
+  listContent: { padding: 16, paddingBottom: 100 },
+  sectionHead: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 6,
+    marginBottom: 10,
+  },
+  sectionLabel: {
     fontSize: 12,
     color: theme.pink,
-    fontWeight: '500',
-    marginTop: 2,
+    fontWeight: '700',
+    letterSpacing: 1.5,
   },
-  cardMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    marginTop: 4,
-  },
-  cardDuration: {
-    fontSize: 12,
+  sectionHint: {
+    fontSize: 11,
     color: theme.textDim,
   },
-  completedBadge: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+
+  // === Hero / Featured card ===
+  heroCard: {
+    height: 180,
+    borderRadius: 14,
+    overflow: 'hidden',
+    marginBottom: 22,
+    borderWidth: 1,
+    borderColor: theme.pink,
+    shadowColor: theme.pink,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  heroImage: { flex: 1, justifyContent: 'flex-end' },
+  heroImageRadius: { borderRadius: 13 },
+  heroOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(28,30,34,0.4)',
+    padding: 14,
+    justifyContent: 'space-between',
+  },
+  heroPlay: {
+    alignSelf: 'flex-end',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(15,23,42,0.75)',
+    borderWidth: 1,
+    borderColor: theme.pink,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  heroBottom: { gap: 6 },
+  heroBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: theme.pink,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 10,
+  },
+  heroBadgeText: {
+    color: '#0F1419',
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.8,
+  },
+  heroTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: theme.text,
+    letterSpacing: -0.4,
+    textShadowColor: 'rgba(0,0,0,0.4)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
+  },
+  heroMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  heroMeta: {
+    fontSize: 12,
+    color: theme.textDim,
+    fontWeight: '500',
+  },
+
+  // === Compact rows ===
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: theme.surface,
+    borderRadius: 10,
+    padding: 11,
+    marginBottom: 7,
+    borderWidth: 1,
+    borderColor: theme.border,
+  },
+  rowImage: {
+    width: 48,
+    height: 48,
+    borderRadius: 8,
+    backgroundColor: theme.surfaceLight,
+  },
+  rowText: { flex: 1, minWidth: 0 },
+  rowTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: theme.text,
+  },
+  rowMeta: {
+    fontSize: 11,
+    color: theme.textDim,
+    marginTop: 2,
+  },
+  rowCheck: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     backgroundColor: theme.pink,
     justifyContent: 'center',
     alignItems: 'center',
-    marginLeft: 8,
   },
 
+  // === FAB ===
   fab: {
     position: 'absolute',
     bottom: 20,
     right: 20,
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    width: 54,
+    height: 54,
+    borderRadius: 27,
     backgroundColor: theme.pink,
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
+    shadowColor: theme.pink,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.6,
+    shadowRadius: 12,
+    elevation: 10,
   },
 });
