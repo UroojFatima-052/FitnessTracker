@@ -34,7 +34,7 @@ Before you start, make sure you have:
 Open a terminal (PowerShell on Windows or Terminal on Mac) and run:
 
 ```bash
-git clone https://github.com/yourusername/FitnessTracker.git
+git clone <repo url here>
 ```
 
 Then enter the project folder:
