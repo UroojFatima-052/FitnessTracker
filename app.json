@@ -11,7 +11,9 @@
       "resizeMode": "contain",
       "backgroundColor": "#4CAF50"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true
     },
@@ -19,10 +21,16 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#4CAF50"
-      }
+      },
+      "package": "com.urooj_fatima.fitnesstracker"
     },
     "web": {
       "favicon": "./assets/images/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "a74ed24a-353d-4c29-ba3b-66d6b4397509"
+      }
     }
   }
 }
